@@ -1,0 +1,442 @@
+<title>Samsung Discovery Toolkit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#14161c; --ink-2:#545a6e; --ink-3:#82869a;
+    --bg:#f3f5fa; --surface:#ffffff; --surface-2:#eaedf6; --surface-3:#dde1ee;
+    --accent:#2450d6; --accent-ink:#16308f; --accent-soft:#e7edfd;
+    --border:#dee2ee; --border-soft:#e9ebf3;
+    --p0:#2450d6; --p1:#2e7fb8; --p2:#2e9b4f;
+    --good:#2e9b4f; --warn:#b5560f;
+    --shadow: 0 1px 2px rgba(20,22,28,.04), 0 10px 24px rgba(20,22,28,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#eef0f6; --ink-2:#b3b8cc; --ink-3:#888fa8;
+      --bg:#12141c; --surface:#1a1d29; --surface-2:#232735; --surface-3:#2c3142;
+      --accent:#6c8fff; --accent-ink:#c2d1ff; --accent-soft:#232c4a;
+      --border:#323750; --border-soft:#282c40;
+      --p0:#6c8fff; --p1:#5fb2e0; --p2:#5cc784;
+      --good:#5cc784; --warn:#e39a5c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#eef0f6; --ink-2:#b3b8cc; --ink-3:#888fa8;
+    --bg:#12141c; --surface:#1a1d29; --surface-2:#232735; --surface-3:#2c3142;
+    --accent:#6c8fff; --accent-ink:#c2d1ff; --accent-soft:#232c4a;
+    --border:#323750; --border-soft:#282c40;
+    --p0:#6c8fff; --p1:#5fb2e0; --p2:#5cc784;
+    --good:#5cc784; --warn:#e39a5c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",-apple-system,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:"Source Serif 4",Georgia,serif;text-wrap:balance;margin:0;}
+  .mono{font-family:"IBM Plex Mono","SF Mono",monospace;font-variant-numeric:tabular-nums;}
+  ::selection{background:var(--accent-soft);}
+
+  header.top{border-bottom:1px solid var(--border);padding:18px clamp(18px,4vw,40px);background:var(--surface);position:sticky;top:0;z-index:20;}
+  .top-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;max-width:1180px;margin:0 auto;flex-wrap:wrap;}
+  .brand{font-size:18px;font-weight:600;}
+  .brand span{color:var(--accent);}
+  .crumbs{color:var(--ink-3);font-size:12.5px;}
+
+  .tabs{display:flex;gap:8px;max-width:1180px;margin:14px auto 0;padding:0 clamp(18px,4vw,40px);}
+  .tabbtn{background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:9px 18px;font-weight:600;font-size:13.5px;color:var(--ink-2);cursor:pointer;font-family:inherit;}
+  .tabbtn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  main{max-width:1180px;margin:0 auto;padding:28px clamp(18px,4vw,40px) 90px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .note{background:var(--accent-soft);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:26px;font-size:13.5px;color:var(--ink-2);}
+  .note b{color:var(--ink);}
+
+  /* ---- calculator ---- */
+  .calc-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px;align-items:start;}
+  @media (max-width:860px){ .calc-grid{grid-template-columns:1fr;} }
+
+  .weights{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;position:sticky;top:96px;}
+  @media (max-width:860px){ .weights{position:static;} }
+  .weights h3{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);font-family:"IBM Plex Sans";font-weight:600;margin-bottom:16px;}
+  .wt-row{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border-soft);transition:opacity .15s ease;}
+  .wt-row:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+  .wt-row.inactive{opacity:.5;}
+  .wt-check{display:flex;align-items:flex-start;gap:9px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .wt-check input[type=checkbox]{margin:2px 0 0;width:15px;height:15px;flex:none;accent-color:var(--accent);cursor:pointer;}
+  .wt-check-text{line-height:1.3;}
+  .wt-pct{color:var(--accent);font-weight:700;}
+  .wt-hint{color:var(--ink-3);font-size:11px;margin:3px 0 8px 24px;}
+  .wt-weight{display:flex;align-items:center;gap:8px;margin-left:24px;}
+  .wt-weight input[type=range]{flex:1;min-width:0;accent-color:var(--accent);height:5px;}
+  .wt-num{width:42px;border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:12.5px;color:var(--accent);font-weight:700;text-align:right;background:var(--surface);flex:none;}
+  .wt-num:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .wt-pctsign{color:var(--accent);font-weight:700;font-size:12px;flex:none;}
+  .wt-total{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft);font-size:12px;color:var(--ink-3);display:flex;justify-content:space-between;}
+  .wt-sanity{margin-top:8px;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;}
+  .wt-sanity .dot{width:7px;height:7px;border-radius:50%;flex:none;}
+  .wt-sanity.ok{background:rgba(46,155,79,.1);color:var(--good);}
+  .wt-sanity.ok .dot{background:var(--good);}
+  .wt-sanity.bad{background:rgba(181,86,15,.1);color:var(--warn);}
+  .wt-sanity.bad .dot{background:var(--warn);}
+
+  .rank-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+  .rank-table th{text-align:left;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:12px 14px;background:var(--surface-2);border-bottom:1px solid var(--border);}
+  .rank-table td{padding:12px 14px;border-bottom:1px solid var(--border-soft);font-size:13.5px;vertical-align:middle;}
+  .rank-table tr:last-child td{border-bottom:none;}
+  .rank-num{font-family:"IBM Plex Mono";color:var(--ink-3);font-size:12px;width:22px;}
+  .mall-name{font-weight:600;}
+  .score-cell{display:flex;align-items:center;gap:10px;min-width:130px;}
+  .score-bar{flex:1;height:8px;background:var(--surface-3);border-radius:5px;overflow:hidden;}
+  .score-bar-fill{height:100%;background:var(--accent);border-radius:5px;transition:width .25s ease;}
+  .score-num{font-family:"IBM Plex Mono";font-weight:600;width:34px;text-align:right;}
+  .rank-table .overflow-wrap{overflow-x:auto;}
+  .scorecard-th{width:1%;}
+  .scorecard-toggle{background:none;border:1px solid var(--border);color:var(--accent-ink);border-radius:7px;padding:5px 10px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;}
+  .scorecard-toggle:hover{border-color:var(--accent);}
+  tr.scorecard-row td{padding:0 14px 16px;background:var(--surface-2);}
+  .scorecard{padding-top:2px;}
+  .scorecard-title{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:8px;}
+  .scorecard-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .scorecard-table th{text-align:left;color:var(--ink-3);font-weight:600;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--border);}
+  .scorecard-table td{padding:6px 8px;border-bottom:1px solid var(--border-soft);}
+  .scorecard-table th:not(:first-child), .scorecard-table td:not(:first-child){text-align:right;}
+  .scorecard-table tfoot td{border-bottom:none;border-top:1.5px solid var(--border);font-weight:700;padding-top:8px;}
+
+  /* ---- worksheet ---- */
+  .ws-grp{margin:30px 0 14px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;}
+  .ws-grp:first-child{margin-top:0;}
+  .tier-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:5px;color:#fff;margin-right:9px;font-family:"IBM Plex Mono";vertical-align:1px;}
+  .tier-p0{background:var(--p0);} .tier-p1{background:var(--p1);} .tier-p2{background:var(--p2);}
+
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .q-text{font-weight:600;font-size:14.5px;margin-bottom:12px;}
+  .q-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:700px){ .q-cols{grid-template-columns:1fr;} }
+  .q-block-label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin-bottom:6px;}
+  .q-hyp-label{color:var(--ink-3);}
+  .q-live-label{color:var(--accent-ink);}
+  .q-hyp{font-size:13px;color:var(--ink-2);line-height:1.55;font-style:italic;}
+  .q-live{min-height:64px;border:1.5px dashed var(--border);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface-2);}
+  .q-live:empty::before{content:"Type what they actually say here, live…";color:var(--ink-3);font-style:italic;}
+  .q-live:focus{outline:2px solid var(--accent);outline-offset:1px;border-style:solid;background:var(--surface);}
+
+  .clear-btn{background:none;border:1px solid var(--border);color:var(--ink-2);border-radius:8px;padding:7px 14px;font-size:12px;font-family:inherit;cursor:pointer;margin-top:2px;}
+  .clear-btn:hover{border-color:var(--warn);color:var(--warn);}
+
+  [hidden]{display:none!important;}
+</style>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand"><span>NuPlay</span> × Samsung — Discovery Toolkit</div>
+    <div class="crumbs">Site Selection · live meeting tools</div>
+  </div>
+  <div class="tabs">
+    <button class="tabbtn active" data-tab="calc">Site Scoring Calculator</button>
+    <button class="tabbtn" data-tab="ws">Discovery Q&amp;A Worksheet</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel active" id="panel-calc">
+    <div class="note"><b>Illustrative sample data.</b> These 10 malls and their per-factor scores are placeholders, not real Cushman &amp; Wakefield figures — built so the ranking has something real to move as you adjust weights live in the room. Swap in actual C&amp;W data once it's available.</div>
+
+    <div class="calc-grid">
+      <div class="weights">
+        <h3>Weight the factors</h3>
+        <div class="wt-hint" style="margin:-4px 0 14px;">Check the parameters that matter for this deal, then set each one's weight.</div>
+        <div id="wtRows"></div>
+        <div class="wt-total"><span>Total weight</span><span class="mono" id="wtTotal">100%</span></div>
+        <div class="wt-sanity" id="wtSanity"></div>
+      </div>
+
+      <div class="overflow-wrap">
+        <table class="rank-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Candidate mall</th>
+              <th>Weighted score</th>
+              <th class="scorecard-th"></th>
+            </tr>
+          </thead>
+          <tbody id="rankBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-ws">
+    <div class="note"><b>How to use this live.</b> Each card has our working hypothesis in italics on the left — an educated guess, not a claim. As they actually answer, type what they say into the box on the right. Your notes save to this browser as you go.</div>
+    <div style="margin-bottom:18px;"><button class="clear-btn" id="clearAll">Clear all live notes</button></div>
+    <div id="wsBody"></div>
+
+    <div class="ws-grp">Other notes</div>
+    <div class="q-card">
+      <div class="q-block-label q-live-label" style="margin-bottom:8px;">Anything else worth capturing — asides, objections, names, follow-ups</div>
+      <div class="q-live" id="otherNotes" contenteditable="true" data-qid="other" style="min-height:120px;"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  // ---------- tabs ----------
+  document.querySelectorAll('.tabbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- calculator ----------
+  // Full catalog of factors we could weight. Only a subset is "active" (in the live calc)
+  // at any moment — pick from the dropdown to bring more in, or remove ones you don't need.
+  const FACTOR_CATALOG = [
+    { id:'demo', label:'Trade-area demographics fit', hint:'Income & lifestyle match to Samsung\'s target shopper', def:20 },
+    { id:'foot', label:'Footfall / traffic volume', hint:'Mall visitor counts & anchor-tenant draw', def:20 },
+    { id:'rent', label:'Rent economics', hint:'Cost efficiency — rent vs. projected sales, not just cheap', def:15 },
+    { id:'profit', label:'Profitability potential', hint:'Look-alike fit to Samsung\'s best-performing stores, or criteria set internally (yet to be worked upon)', def:20 },
+    { id:'audience', label:'Target audience / co-tenancy', hint:'Fit with mall tenant mix & shopper profile', def:15 },
+    { id:'cannib', label:'Cannibalization risk (inverted)', hint:'Higher score = further from existing Samsung stores', def:10 },
+    { id:'density', label:'Catchment population density', hint:'Size & density of the trade-area population within drive time', def:10 },
+    { id:'anchor', label:'Anchor-tenant strength', hint:"Draw power of the mall's anchors (department stores, Apple, etc.)", def:10 },
+    { id:'gla', label:'GLA / format fit', hint:"Gross leasable area matches Samsung's flagship-format requirement", def:10 },
+    { id:'salespsf', label:'Projected sales per sq ft', hint:'Benchmarked against comparable-store sales density', def:15 },
+    { id:'tier', label:'Mall tier / brand prestige', hint:'A/B/C mall classification and overall brand halo', def:10 },
+    { id:'lease', label:'Lease terms & availability', hint:'Term length, landlord flexibility, space-availability timeline', def:10 },
+    { id:'access', label:'Access & visibility', hint:'Parking, transit access, and street/mall visibility', def:10 },
+    { id:'competitive', label:'Competitive presence nearby', hint:'Density of competing electronics retailers (Apple, Best Buy) in the trade area', def:10 },
+  ];
+  const factorById = id => FACTOR_CATALOG.find(f => f.id === id);
+
+  const MALLS = [
+    { name:'Westgate Premier Mall', demo:8, foot:9, rent:6, profit:8, audience:8, cannib:7, density:8, anchor:9, gla:8, salespsf:8, tier:9, lease:6, access:8, competitive:5 },
+    { name:'Meadowbrook Galleria', demo:7, foot:7, rent:7, profit:6, audience:7, cannib:8, density:7, anchor:7, gla:7, salespsf:6, tier:7, lease:7, access:7, competitive:6 },
+    { name:'Crestview Town Center', demo:6, foot:5, rent:8, profit:5, audience:6, cannib:9, density:5, anchor:5, gla:6, salespsf:5, tier:5, lease:8, access:6, competitive:8 },
+    { name:'Harborline Fashion Square', demo:9, foot:8, rent:4, profit:9, audience:9, cannib:5, density:9, anchor:9, gla:9, salespsf:9, tier:9, lease:4, access:9, competitive:4 },
+    { name:'Ridgemont Commons', demo:5, foot:6, rent:9, profit:5, audience:5, cannib:9, density:4, anchor:4, gla:5, salespsf:5, tier:4, lease:9, access:5, competitive:9 },
+    { name:'Lakeside Marketplace', demo:7, foot:8, rent:6, profit:7, audience:7, cannib:6, density:7, anchor:7, gla:7, salespsf:7, tier:6, lease:6, access:7, competitive:6 },
+    { name:'Sunview Plaza', demo:6, foot:7, rent:7, profit:6, audience:6, cannib:8, density:6, anchor:6, gla:6, salespsf:6, tier:5, lease:7, access:6, competitive:7 },
+    { name:'Northfield Junction', demo:8, foot:6, rent:5, profit:7, audience:8, cannib:4, density:8, anchor:7, gla:7, salespsf:7, tier:7, lease:5, access:7, competitive:3 },
+    { name:'Parkview Exchange', demo:5, foot:5, rent:8, profit:4, audience:5, cannib:9, density:4, anchor:4, gla:5, salespsf:4, tier:4, lease:8, access:5, competitive:9 },
+    { name:'Eastgate Prime Outlets', demo:9, foot:9, rent:3, profit:8, audience:8, cannib:6, density:9, anchor:8, gla:9, salespsf:8, tier:8, lease:3, access:9, competitive:5 },
+  ];
+
+  // Which factors are in play right now — check/uncheck any of the full catalog above.
+  let activeIds = ['demo','foot','rent','profit','audience','cannib'];
+  const weights = {};
+  FACTOR_CATALOG.forEach(f => { weights[f.id] = f.def; });
+
+  const wtRows = document.getElementById('wtRows');
+  const rankBody = document.getElementById('rankBody');
+  const wtTotalEl = document.getElementById('wtTotal');
+  const wtSanityEl = document.getElementById('wtSanity');
+
+  function renderWeightsPanel(){
+    // Fixed list of every parameter, each with its own select/unselect checkbox.
+    wtRows.innerHTML = FACTOR_CATALOG.map(f => {
+      const checked = activeIds.includes(f.id);
+      const w = weights[f.id];
+      return `
+        <div class="wt-row ${checked ? '' : 'inactive'}" data-id="${f.id}">
+          <label class="wt-check">
+            <input type="checkbox" class="wt-toggle" data-id="${f.id}" ${checked ? 'checked' : ''}>
+            <span class="wt-check-text">${f.label}</span>
+          </label>
+          <div class="wt-hint">${f.hint}</div>
+          <div class="wt-weight" ${checked ? '' : 'hidden'}>
+            <input type="range" min="0" max="100" step="1" value="${w}" id="sld-${f.id}" ${checked ? '' : 'disabled'} />
+            <input type="number" class="wt-num mono" id="num-${f.id}" min="0" max="100" step="1" value="${w}" ${checked ? '' : 'disabled'}>
+            <span class="wt-pctsign">%</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    FACTOR_CATALOG.forEach(f => {
+      const id = f.id;
+      const sld = document.getElementById('sld-' + id);
+      const num = document.getElementById('num-' + id);
+      sld.addEventListener('input', () => {
+        weights[id] = parseInt(sld.value, 10) || 0;
+        num.value = weights[id];
+        render();
+      });
+      num.addEventListener('input', () => {
+        let v = parseInt(num.value, 10);
+        if (isNaN(v)) v = 0;
+        v = Math.max(0, Math.min(100, v));
+        weights[id] = v;
+        sld.value = v;
+        render();
+      });
+    });
+
+    wtRows.querySelectorAll('.wt-toggle').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.id;
+        if (cb.checked) {
+          if (!activeIds.includes(id)) activeIds.push(id);
+        } else {
+          activeIds = activeIds.filter(a => a !== id);
+        }
+        renderWeightsPanel();
+        render();
+      });
+    });
+  }
+
+  // which candidate malls currently have their scorecard expanded (survives re-render)
+  const expandedMalls = new Set();
+
+  function scorecardHtml(m, totalSafe){
+    const rows = activeIds.map(id => {
+      const f = factorById(id);
+      const score = m[id];
+      const w = weights[id];
+      const contribution = (score * w) / totalSafe;
+      return `
+        <tr>
+          <td>${f.label}</td>
+          <td class="mono">${score}/10</td>
+          <td class="mono">${w}%</td>
+          <td class="mono">${contribution.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+    return `
+      <tr class="scorecard-row" ${expandedMalls.has(m.name) ? '' : 'hidden'}>
+        <td colspan="4">
+          <div class="scorecard">
+            <div class="scorecard-title">Sample scorecard — ${m.name}</div>
+            <table class="scorecard-table">
+              <thead><tr><th>Factor</th><th>Score</th><th>Weight</th><th>Contribution</th></tr></thead>
+              <tbody>${rows}</tbody>
+              <tfoot><tr><td colspan="3">Weighted total</td><td class="mono">${m.score.toFixed(2)}</td></tr></tfoot>
+            </table>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function render(){
+    const total = activeIds.reduce((s,id) => s + weights[id], 0);
+    const totalSafe = total || 1;
+    wtTotalEl.textContent = total + '%';
+
+    if (total === 100) {
+      wtSanityEl.className = 'wt-sanity ok';
+      wtSanityEl.innerHTML = `<span class="dot"></span> Balanced — weights sum to 100%`;
+    } else {
+      wtSanityEl.className = 'wt-sanity bad';
+      const diff = total - 100;
+      const word = diff > 0 ? 'Over' : 'Under';
+      wtSanityEl.innerHTML = `<span class="dot"></span> ${word} by ${Math.abs(diff)}% — scores below are normalized live, but rebalance to keep weights reading as true percentages`;
+    }
+
+    const scored = MALLS.map(m => {
+      const weighted = activeIds.reduce((s,id) => s + m[id] * weights[id], 0) / totalSafe;
+      return { ...m, score: weighted };
+    }).sort((a,b) => b.score - a.score);
+
+    rankBody.innerHTML = scored.map((m,i) => `
+      <tr>
+        <td class="rank-num">${i+1}</td>
+        <td class="mall-name">${m.name}</td>
+        <td>
+          <div class="score-cell">
+            <div class="score-bar"><div class="score-bar-fill" style="width:${(m.score/10*100).toFixed(0)}%"></div></div>
+            <div class="score-num mono">${m.score.toFixed(1)}</div>
+          </div>
+        </td>
+        <td><button type="button" class="scorecard-toggle" data-mall="${m.name}">${expandedMalls.has(m.name) ? 'Hide' : 'View'} scorecard</button></td>
+      </tr>
+      ${scorecardHtml(m, totalSafe)}
+    `).join('');
+
+    rankBody.querySelectorAll('.scorecard-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.mall;
+        if (expandedMalls.has(name)) expandedMalls.delete(name); else expandedMalls.add(name);
+        render();
+      });
+    });
+  }
+
+  renderWeightsPanel();
+  render();
+
+  // ---------- discovery worksheet ----------
+  const QUESTIONS = [
+    { tier:'p0', label:'P0 — shapes the core design', q:'How does Samsung define a "successful" store?', hyp:'Likely anchored to sales-per-square-foot versus a comparable-store benchmark, plus a defined breakeven window — though the urgency of the 70–80 store rollout may make them more flexible on payback period than on raw revenue targets.' },
+    { tier:'p0', q:'Is the 70–80 store rollout phased by region or on one timeline?', hyp:'Given the scale, most retailers phase expansion of this size by region or tier-1 market first, sequencing around lease-cycle availability — plausibly starting where Samsung already has brand density.' },
+    { tier:'p0', q:'Does C&W provide broker notes/insights alongside structured fields, or only structured data?', hyp:'C&W typically provides structured deal-comp data (rent, GLA, traffic) as the baseline product, with broker commentary as a separate, less standardized layer — likely available but inconsistent across all ~350 malls.' },
+    { tier:'p0', q:"Can C&W's data be shared with a third party?", hyp:"Depends on Samsung's existing brokerage agreement; many such agreements restrict re-sharing proprietary comp data without explicit consent, so this is more likely a data-use amendment than a simple yes." },
+    { tier:'p1', label:'P1 — shapes data & integration scope', q:"What format is the C&W dataset in, and how complete is it?", hyp:'Most likely periodic Excel/CSV exports rather than a live feed, with thinner coverage expected on newer or smaller-tier malls.' },
+    { tier:'p1', q:'What historical detail exists for the 9 current stores?', hyp:"Likely POS and foot-traffic data since each store's opening, held in Samsung's internal BI system rather than a dedicated real-estate platform." },
+    { tier:'p1', q:'Is there comparable data from other markets?', hyp:"Samsung's international retail footprint may have comparable-store data, though it may not transfer cleanly given different real-estate and consumer dynamics." },
+    { tier:'p1', q:'Is a GIS or site-selection tool already in use internally?', hyp:'Given the scale of this rollout, it is plausible C&W or Samsung already runs a standard GIS/site-selection platform for baseline screening that we should complement, not duplicate.' },
+    { tier:'p2', label:'P2 — shapes governance & success criteria', q:'Are there hard constraints — GLA, exclusion radius, mall tier?', hyp:'Likely yes — flagship consumer-electronics stores typically require a minimum GLA and mall tier, plus an exclusion radius to avoid cannibalizing nearby stores.' },
+    { tier:'p2', q:"Does this need to run inside Samsung's own cloud tenant?", hyp:"Enterprises with mature cloud-security policy often require either tenant integration or strict data-residency terms — likely leans toward a security review rather than an open yes." },
+    { tier:'p2', q:'Who signs off on POC success?', hyp:'Likely a joint sign-off between the Head of Retail and a Real Estate/Finance committee representative, since lease commitments ultimately need committee approval.' },
+    { tier:'p2', q:'What budget and timeline exist relative to the rollout?', hyp:"Given stores are already being added, the POC timeline probably needs to fit inside the current rollout cadence rather than a leisurely multi-quarter runway." },
+  ];
+
+  const wsBody = document.getElementById('wsBody');
+  let html = '';
+  let lastTier = '';
+  QUESTIONS.forEach((item, i) => {
+    if (item.label && item.tier !== lastTier) {
+      html += `<div class="ws-grp">${item.label}</div>`;
+      lastTier = item.tier;
+    }
+    html += `
+      <div class="q-card">
+        <div class="q-text"><span class="tier-badge tier-${item.tier}">${item.tier.toUpperCase()}</span>${item.q}</div>
+        <div class="q-cols">
+          <div>
+            <div class="q-block-label q-hyp-label">Our hypothesis</div>
+            <div class="q-hyp">"${item.hyp}"</div>
+          </div>
+          <div>
+            <div class="q-block-label q-live-label">What they actually said</div>
+            <div class="q-live" contenteditable="true" data-qid="q${i}"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  wsBody.innerHTML = html;
+
+  // persistence (best-effort, per-viewer convenience only)
+  function loadNotes(){
+    document.querySelectorAll('.q-live').forEach(el => {
+      try {
+        const saved = localStorage.getItem('samsung-ws-' + el.dataset.qid);
+        if (saved) el.textContent = saved;
+      } catch(e) {}
+    });
+  }
+  document.querySelectorAll('.q-live').forEach(el => {
+    el.addEventListener('input', () => {
+      try { localStorage.setItem('samsung-ws-' + el.dataset.qid, el.textContent); } catch(e) {}
+    });
+  });
+  loadNotes();
+
+  document.getElementById('clearAll').addEventListener('click', () => {
+    document.querySelectorAll('.q-live').forEach(el => {
+      el.textContent = '';
+      try { localStorage.removeItem('samsung-ws-' + el.dataset.qid); } catch(e) {}
+    });
+  });
+})();
+</script>
