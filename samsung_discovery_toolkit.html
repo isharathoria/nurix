@@ -75,6 +75,13 @@
   .wt-num{width:42px;border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:12.5px;color:var(--accent);font-weight:700;text-align:right;background:var(--surface);flex:none;}
   .wt-num:focus{outline:2px solid var(--accent);outline-offset:1px;}
   .wt-pctsign{color:var(--accent);font-weight:700;font-size:12px;flex:none;}
+  .add-custom{display:flex;gap:6px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-soft);}
+  .add-custom input[type=text]{flex:1;min-width:0;border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:12.5px;font-family:inherit;color:var(--ink);background:var(--surface);}
+  .add-custom button{background:var(--accent-soft);border:1px solid var(--border);color:var(--accent-ink);border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;}
+  .add-custom button:hover{border-color:var(--accent);}
+  .add-custom-hint{color:var(--ink-3);font-size:11px;margin-top:7px;}
+  .custom-score-input{width:38px;border:1px solid var(--border);border-radius:5px;padding:2px 3px;font-size:12px;text-align:right;background:var(--surface);color:var(--ink);}
+  .custom-score-input:focus{outline:2px solid var(--accent);outline-offset:1px;}
   .wt-total{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft);font-size:12px;color:var(--ink-3);display:flex;justify-content:space-between;}
   .wt-sanity{margin-top:8px;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;}
   .wt-sanity .dot{width:7px;height:7px;border-radius:50%;flex:none;}
@@ -150,6 +157,11 @@
         <h3>Weight the factors</h3>
         <div class="wt-hint" style="margin:-4px 0 14px;">Check the parameters that matter for this deal, then set each one's weight.</div>
         <div id="wtRows"></div>
+        <div class="add-custom">
+          <input type="text" id="customFactorInput" placeholder="e.g. Landlord track record" maxlength="60">
+          <button type="button" id="addCustomFactorBtn">+ Add factor</button>
+        </div>
+        <div class="add-custom-hint">Not on the list? Add your own — it starts at a neutral 5/10 for every mall; open a mall's scorecard below to set real scores live.</div>
         <div class="wt-total"><span>Total weight</span><span class="mono" id="wtTotal">100%</span></div>
         <div class="wt-sanity" id="wtSanity"></div>
       </div>
@@ -171,7 +183,6 @@
   </section>
 
   <section class="panel" id="panel-ws">
-    <div class="note"><b>How to use this live.</b> Each card has our working hypothesis in italics on the left — an educated guess, not a claim. As they actually answer, type what they say into the box on the right. Your notes save to this browser as you go.</div>
     <div style="margin-bottom:18px;"><button class="clear-btn" id="clearAll">Clear all live notes</button></div>
     <div id="wsBody"></div>
 
@@ -214,7 +225,16 @@
     { id:'access', label:'Access & visibility', hint:'Parking, transit access, and street/mall visibility', def:10 },
     { id:'competitive', label:'Competitive presence nearby', hint:'Density of competing electronics retailers (Apple, Best Buy) in the trade area', def:10 },
   ];
-  const factorById = id => FACTOR_CATALOG.find(f => f.id === id);
+  // Factors you add live, on top of the catalog above — not pre-loaded with illustrative
+  // mall data, so each one starts neutral (5/10) until you score malls yourself.
+  const customFactors = [];
+  const customScores = {}; // customScores[factorId][mallName] = 1-10
+  const isCustomFactor = id => customFactors.some(f => f.id === id);
+  const allFactors = () => FACTOR_CATALOG.concat(customFactors);
+  const factorById = id => allFactors().find(f => f.id === id);
+  const scoreFor = (m, id) => isCustomFactor(id)
+    ? ((customScores[id] && customScores[id][m.name] !== undefined) ? customScores[id][m.name] : 5)
+    : m[id];
 
   const MALLS = [
     { name:'Westgate Premier Mall', demo:8, foot:9, rent:6, profit:8, audience:8, cannib:7, density:8, anchor:9, gla:8, salespsf:8, tier:9, lease:6, access:8, competitive:5 },
@@ -240,15 +260,15 @@
   const wtSanityEl = document.getElementById('wtSanity');
 
   function renderWeightsPanel(){
-    // Fixed list of every parameter, each with its own select/unselect checkbox.
-    wtRows.innerHTML = FACTOR_CATALOG.map(f => {
+    // Every parameter — catalog plus anything added live — each with its own select/unselect checkbox.
+    wtRows.innerHTML = allFactors().map(f => {
       const checked = activeIds.includes(f.id);
       const w = weights[f.id];
       return `
         <div class="wt-row ${checked ? '' : 'inactive'}" data-id="${f.id}">
           <label class="wt-check">
             <input type="checkbox" class="wt-toggle" data-id="${f.id}" ${checked ? 'checked' : ''}>
-            <span class="wt-check-text">${f.label}</span>
+            <span class="wt-check-text">${f.label}${isCustomFactor(f.id) ? ' <span class="wt-pctsign" style="font-weight:600;">(custom)</span>' : ''}</span>
           </label>
           <div class="wt-hint">${f.hint}</div>
           <div class="wt-weight" ${checked ? '' : 'hidden'}>
@@ -260,7 +280,7 @@
       `;
     }).join('');
 
-    FACTOR_CATALOG.forEach(f => {
+    allFactors().forEach(f => {
       const id = f.id;
       const sld = document.getElementById('sld-' + id);
       const num = document.getElementById('num-' + id);
@@ -293,19 +313,40 @@
     });
   }
 
+  document.getElementById('addCustomFactorBtn').addEventListener('click', () => {
+    const input = document.getElementById('customFactorInput');
+    const label = input.value.trim();
+    if (!label) return;
+    const id = 'custom-' + Date.now();
+    customFactors.push({ id, label, hint: 'Custom factor you added live — starts neutral at 5/10.', def: 10 });
+    weights[id] = 10;
+    customScores[id] = {};
+    MALLS.forEach(m => { customScores[id][m.name] = 5; });
+    activeIds.push(id);
+    input.value = '';
+    renderWeightsPanel();
+    render();
+  });
+  document.getElementById('customFactorInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addCustomFactorBtn').click(); }
+  });
+
   // which candidate malls currently have their scorecard expanded (survives re-render)
   const expandedMalls = new Set();
 
   function scorecardHtml(m, totalSafe){
     const rows = activeIds.map(id => {
       const f = factorById(id);
-      const score = m[id];
+      const score = scoreFor(m, id);
       const w = weights[id];
       const contribution = (score * w) / totalSafe;
+      const scoreCell = isCustomFactor(id)
+        ? `<input type="number" class="custom-score-input mono" min="0" max="10" step="1" value="${score}" data-factor="${id}" data-mall="${m.name}">/10`
+        : `${score}/10`;
       return `
         <tr>
           <td>${f.label}</td>
-          <td class="mono">${score}/10</td>
+          <td class="mono">${scoreCell}</td>
           <td class="mono">${w}%</td>
           <td class="mono">${contribution.toFixed(2)}</td>
         </tr>
@@ -343,7 +384,7 @@
     }
 
     const scored = MALLS.map(m => {
-      const weighted = activeIds.reduce((s,id) => s + m[id] * weights[id], 0) / totalSafe;
+      const weighted = activeIds.reduce((s,id) => s + scoreFor(m, id) * weights[id], 0) / totalSafe;
       return { ...m, score: weighted };
     }).sort((a,b) => b.score - a.score);
 
@@ -366,6 +407,16 @@
       btn.addEventListener('click', () => {
         const name = btn.dataset.mall;
         if (expandedMalls.has(name)) expandedMalls.delete(name); else expandedMalls.add(name);
+        render();
+      });
+    });
+
+    rankBody.querySelectorAll('.custom-score-input').forEach(inp => {
+      inp.addEventListener('change', () => {
+        let v = parseInt(inp.value, 10);
+        if (isNaN(v)) v = 5;
+        v = Math.max(0, Math.min(10, v));
+        customScores[inp.dataset.factor][inp.dataset.mall] = v;
         render();
       });
     });
